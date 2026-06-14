@@ -1,43 +1,43 @@
 /*
  * 営業投稿メーカー 本体
  * -------------------------------------------------------------
- * Bar Soutsuの定型フォーマットをベースにLINE投稿文を組み立てる入力補助ツール。
+ * Bar Soutsuの定型フォーマットでLINE投稿文を組み立てる入力補助ツール。
  *   文頭に「〇〇です。（投稿者）」＋お礼 → 季節の一言(任意) → 本日の営業時間
- *   → 今日紹介するお酒（名前を強調＋説明） → 空席/予約(任意) → 締め → タグ
+ *   → 今日紹介するお酒（名前を強調＋説明） → 空席/予約(任意) → 締め
+ * - お酒の名前・説明は「在庫カタログ（/gin-stock/gins.json）」から検索して引き込める（同一ドメイン）。
  * - 言い回しは「シード（乱数の種）」で決める。入力を変えても種が同じなら言い回しは安定し、
  *   「言い回しを変える」ボタンで種が変わると表現が一新される。
- * - 入力内容は端末（localStorage）に自動保存（file://でも落ちないよう try-catch で保護）。
- * - CSP（script-src 'self'）下なので、イベントは addEventListener で配線する。
+ * - 文章は「落ち着いた大人」トーン固定。入力内容は端末（localStorage）に自動保存（try-catch）。
+ * - CSP（script-src 'self' / connect-src 'self'）下。同一ドメインのgins.jsonはfetch可。
  */
 (function () {
   "use strict";
 
-  var STORAGE_KEY = "soutsu_post_v2";
+  var STORAGE_KEY = "soutsu_post_v3";
 
   function $(id) { return document.getElementById(id); }
   var el = {
     pShop: $("p-shop"), pHours: $("p-hours"), pClosed: $("p-closed"),
-    pTel: $("p-tel"), pStaff: $("p-staff"), pTags: $("p-tags"),
+    pTel: $("p-tel"), pStaff: $("p-staff"),
     gDate: $("g-date"), gWeather: $("g-weather"), gSeason: $("g-season"),
     rType: $("r-type"), rName: $("r-name"), rDesc: $("r-desc"),
+    catSearch: $("cat-search"), catResults: $("cat-results"),
     hSeat: $("h-seat"), hReserve: $("h-reserve"), hShowHours: $("h-showhours"),
     eText: $("e-text"),
     tGreeting: $("t-greeting"), tRecommend: $("t-recommend"), tHours: $("t-hours"),
-    tEvent: $("t-event"), tClosing: $("t-closing"), tTags: $("t-tags"),
+    tEvent: $("t-event"), tClosing: $("t-closing"),
     output: $("output"), charCount: $("char-count"),
     btnCopy: $("btn-copy"), btnShuffle: $("btn-shuffle"), btnClear: $("btn-clear"),
-    toneRow: $("tone-row"), staffRow: $("staff-row"),
+    staffRow: $("staff-row"),
   };
 
-  // 保存が無いときの初期値
   var DEFAULTS = {
     "p-shop": "Bar Soutsu",
     "p-hours": "19:00〜翌2:00",
     "p-staff": "小野寺, 眞家",
-    "p-tags": "#BarSoutsu #バー創通 #本日も営業",
   };
 
-  var state = { tone: "calm", seed: 1, staff: "" };
+  var state = { seed: 1, staff: "" };
 
   // ---- 乱数（シード固定）---------------------------------------------------
   function mulberry32(a) {
@@ -50,9 +50,8 @@
   }
   var rng = mulberry32(1);
   function pick(arr) { return arr[Math.floor(rng() * arr.length)]; }
-  function chance(p) { return rng() < p; }
 
-  // ---- 文面の素材プール ----------------------------------------------------
+  // ---- 文面の素材プール（落ち着いた大人トーン）----------------------------
   // {shop}=店名 / {day}=曜日 / {hours}=営業時間 / {tel}=電話番号 / {w}=お酒の種別語
   var THANKS = [
     "いつも{shop}をご利用いただきまして、誠にありがとうございます。",
@@ -102,49 +101,16 @@
     both_no: ["ご予約はLINE・お電話どちらでも承ります。"],
   };
 
-  // 今日紹介するお酒：種別語＋導入フレーズ
   var TYPE_WORD = { gin: "ジン", cocktail: "カクテル", bottle: "ボトル", osusume: "お酒" };
-  var RECO_LEAD = [
-    "今日紹介する{w}は",
-    "本日ご紹介する{w}は",
-    "本日のおすすめ{w}は",
-  ];
+  var RECO_LEAD = ["今日紹介する{w}は", "本日ご紹介する{w}は", "本日のおすすめ{w}は"];
 
   var EVENT_INTRO = ["お知らせです。", "《イベント情報》", "【お知らせ】"];
 
-  var CLOSING = {
-    calm: [
-      "皆様のご来店を心よりお待ちしております。",
-      "ご来店を心よりお待ち申し上げております。",
-      "本日も皆様のお越しをお待ちしております。",
-    ],
-    friendly: [
-      "皆様のご来店を心よりお待ちしております！",
-      "ぜひお気軽にお立ち寄りください。お待ちしております！",
-      "皆様のお越しを楽しみにお待ちしています。",
-    ],
-    lively: [
-      "皆様のご来店を心よりお待ちしております！",
-      "ぜひ遊びにいらしてください！お待ちしてます！",
-      "今夜も素敵な一杯をご用意してお待ちしてます！",
-    ],
-  };
-
-  var EMOJI = {
-    greeting: ["🌙", "✨", "🌃", "🍃"],
-    drink: ["🍸", "🥃", "🍹", "🍷"],
-    closing: ["🍸", "✨", "😊", "🌙", "🙇"],
-    event: ["📣", "🎉", "✨"],
-  };
-  var EMOJI_RATE = { calm: 0, friendly: 0.7, lively: 1 };
-
-  function deco(slot) {
-    var rate = EMOJI_RATE[state.tone] || 0;
-    if (!chance(rate)) return "";
-    var s = " " + pick(EMOJI[slot]);
-    if (state.tone === "lively" && chance(0.4)) s += pick(EMOJI[slot]);
-    return s;
-  }
+  var CLOSING = [
+    "皆様のご来店を心よりお待ちしております。",
+    "ご来店を心よりお待ち申し上げております。",
+    "本日も皆様のお越しをお待ちしております。",
+  ];
 
   // ---- 日付まわり ----------------------------------------------------------
   var DOW = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"];
@@ -169,30 +135,22 @@
   function shopName() { return el.pShop.value.trim() || DEFAULTS["p-shop"]; }
 
   // ---- 各段落の組み立て ----------------------------------------------------
-  // 文頭：投稿者＋お礼（常に入る）
   function buildOpener() {
     var line = "";
     if (state.staff) line += state.staff + "です。";
     line += fill(pick(THANKS), { shop: shopName() });
     return line;
   }
-
-  // 季節・天気の一言（任意）
   function buildSeason() {
-    var d = getDate();
-    var day = DOW[d.getDay()];
-    var weather = el.gWeather.value;
-    var s;
+    var d = getDate(), day = DOW[d.getDay()], weather = el.gWeather.value, s;
     if (weather && WEATHER[weather]) {
       s = pick(WEATHER[weather]);
     } else {
       var season = el.gSeason.value === "auto" ? autoSeason(d) : el.gSeason.value;
       s = pick(SEASON[season] || SEASON["春"]);
     }
-    return fill(s, { day: day }) + deco("greeting");
+    return fill(s, { day: day });
   }
-
-  // 本日の営業時間（＋空席・予約）
   function buildHours() {
     var parts = [];
     if (el.hShowHours.checked) {
@@ -206,47 +164,35 @@
     else if (rv === "both") parts.push(fill(pick(tel ? RESERVE.both_with : RESERVE.both_no), { tel: tel }));
     return parts.join("");
   }
-
-  // 今日紹介するお酒（名前を強調＋説明）
   function buildRecommend() {
     var name = el.rName.value.trim();
     if (!name) return "";
     var w = TYPE_WORD[el.rType.value] || "お酒";
-    var lead = fill(pick(RECO_LEAD), { w: w });
-    var block = lead + deco("drink") + "\n\n“" + name + "”\n\nです。";
+    var block = fill(pick(RECO_LEAD), { w: w }) + "\n\n“" + name + "”\n\nです。";
     var desc = el.rDesc.value.trim();
     if (desc) block += "\n\n" + desc;
     return block;
   }
-
   function buildEvent() {
     var txt = el.eText.value.trim();
     if (!txt) return "";
-    return pick(EVENT_INTRO) + deco("event") + "\n" + txt;
+    return pick(EVENT_INTRO) + "\n" + txt;
   }
-
-  function buildClosing() {
-    return pick(CLOSING[state.tone] || CLOSING.calm) + deco("closing");
-  }
-
-  function buildTags() { return el.pTags.value.trim(); }
+  function buildClosing() { return pick(CLOSING); }
 
   // ---- 生成本体 ------------------------------------------------------------
   function generate() {
     rng = mulberry32(state.seed);
     var blocks = [];
-    if (el.tGreeting.checked) blocks.push(buildSeason()); // 季節の一言（任意・先頭）
-    blocks.push(buildOpener());                           // 投稿者＋お礼（常時）
+    if (el.tGreeting.checked) blocks.push(buildSeason());
+    blocks.push(buildOpener());
     if (el.tHours.checked) blocks.push(buildHours());
     if (el.tRecommend.checked) blocks.push(buildRecommend());
     if (el.tEvent.checked) blocks.push(buildEvent());
     if (el.tClosing.checked) blocks.push(buildClosing());
-    if (el.tTags.checked) blocks.push(buildTags());
-
     el.output.value = blocks.filter(Boolean).join("\n\n");
     updateCount();
   }
-
   function updateCount() { el.charCount.textContent = el.output.value.length + " 文字"; }
 
   // ---- 表示の同期 ----------------------------------------------------------
@@ -258,6 +204,71 @@
   }
   function setVis(id, on) { var n = $(id); if (n) n.style.display = on ? "" : "none"; }
 
+  // ---- 在庫カタログ連携 ----------------------------------------------------
+  // /gin-stock/gins.json（同一ドメイン）を遅延読み込みし、名前・カナ等で検索。
+  var catalog = null, catState = "idle", catShown = [];
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  function catStatus(msg) {
+    el.catResults.style.display = "block";
+    el.catResults.innerHTML = '<div class="cat-status">' + esc(msg) + "</div>";
+  }
+  function loadCatalog(cb) {
+    if (catState === "ready") { cb(); return; }
+    if (catState === "loading") return;
+    catState = "loading";
+    catStatus("カタログを読み込み中…");
+    fetch("/gin-stock/gins.json", { cache: "force-cache" })
+      .then(function (r) { if (!r.ok) throw new Error("http"); return r.json(); })
+      .then(function (d) {
+        var gins = (d && d.gins) || [];
+        catalog = gins.map(function (g) {
+          return {
+            name: g.name || "", kana: g.kana || "", note: g.note || "",
+            country: g.country || "",
+            hay: ((g.name || "") + " " + (g.kana || "") + " " + (g.country || "") + " " + (g.botanicals || "")).toLowerCase(),
+          };
+        });
+        catState = "ready"; cb();
+      })
+      .catch(function () {
+        catState = "error";
+        catStatus("カタログを読み込めませんでした。名前と説明は手入力できます。");
+      });
+  }
+  function renderCat(q) {
+    q = (q || "").trim().toLowerCase();
+    if (!q) { el.catResults.style.display = "none"; el.catResults.innerHTML = ""; return; }
+    if (catState !== "ready") return; // 読み込み中はstatus表示のまま
+    catShown = catalog.filter(function (g) { return g.hay.indexOf(q) >= 0; }).slice(0, 30);
+    el.catResults.style.display = "block";
+    if (!catShown.length) {
+      el.catResults.innerHTML = '<div class="cat-status">「' + esc(q) + "」に一致する銘柄は見つかりませんでした。</div>";
+      return;
+    }
+    el.catResults.innerHTML = catShown.map(function (g, i) {
+      var sub = [g.name && g.kana ? g.kana : "", g.country].filter(Boolean).join(" ・ ");
+      return '<button type="button" class="cat-item" data-i="' + i + '">' +
+        '<span class="cat-name">' + esc(g.name || g.kana) + "</span>" +
+        (sub ? '<span class="cat-sub">' + esc(sub) + "</span>" : "") + "</button>";
+    }).join("");
+  }
+  function pickCat(i) {
+    var g = catShown[i];
+    if (!g) return;
+    el.rName.value = g.kana || g.name; // 投稿はカナ表記を優先（無ければ英名）
+    el.rDesc.value = g.note;
+    el.catSearch.value = "";
+    el.catResults.style.display = "none";
+    el.catResults.innerHTML = "";
+    if (!el.tRecommend.checked) { el.tRecommend.checked = true; syncParts(); }
+    saveAll(); generate();
+  }
+
   // ---- 投稿者チップ --------------------------------------------------------
   function staffList() {
     return el.pStaff.value.split(/[,、]/).map(function (s) { return s.trim(); }).filter(Boolean);
@@ -268,41 +279,30 @@
     el.staffRow.innerHTML = list.map(function (name) {
       var on = name === state.staff;
       return '<button type="button" class="chip' + (on ? " active" : "") +
-        '" data-staff="' + name.replace(/"/g, "&quot;") + '" role="radio" aria-checked="' +
-        (on ? "true" : "false") + '">' + name + "</button>";
+        '" data-staff="' + esc(name) + '" role="radio" aria-checked="' + (on ? "true" : "false") + '">' +
+        esc(name) + "</button>";
     }).join("");
   }
 
-  // ---- トーン --------------------------------------------------------------
-  function applyTone() {
-    el.toneRow.querySelectorAll(".chip").forEach(function (c) {
-      var on = c.getAttribute("data-tone") === state.tone;
-      c.classList.toggle("active", on);
-      c.setAttribute("aria-checked", on ? "true" : "false");
-    });
-  }
-
   // ---- 保存・読み込み ------------------------------------------------------
-  var SAVE_IDS = ["p-shop", "p-hours", "p-closed", "p-tel", "p-staff", "p-tags",
+  var SAVE_IDS = ["p-shop", "p-hours", "p-closed", "p-tel", "p-staff",
     "g-weather", "g-season", "r-type", "r-name", "r-desc", "h-seat", "h-reserve"];
-  var CHECK_IDS = ["t-greeting", "t-recommend", "t-hours", "t-event", "t-closing", "t-tags", "h-showhours"];
+  var CHECK_IDS = ["t-greeting", "t-recommend", "t-hours", "t-event", "t-closing", "h-showhours"];
 
   function saveAll() {
     try {
-      var data = { tone: state.tone, staff: state.staff };
+      var data = { staff: state.staff };
       SAVE_IDS.forEach(function (id) { data[id] = $(id).value; });
       CHECK_IDS.forEach(function (id) { data[id] = $(id).checked; });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (e) { /* 保存不可でも動作継続 */ }
   }
-
   function loadAll() {
     var data = {};
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
       if (raw) data = JSON.parse(raw) || {};
     } catch (e) { data = {}; }
-
     SAVE_IDS.forEach(function (id) {
       if (data[id] != null) $(id).value = data[id];
       else if (DEFAULTS[id]) $(id).value = DEFAULTS[id];
@@ -310,14 +310,10 @@
     CHECK_IDS.forEach(function (id) {
       if (typeof data[id] === "boolean") $(id).checked = data[id];
     });
-    if (data.tone) state.tone = data.tone;
     if (data.staff) state.staff = data.staff;
-
-    el.gDate.value = todayISO(); // 日付は常に今日
-    applyTone();
+    el.gDate.value = todayISO();
     renderStaffChips();
   }
-
   function todayISO() {
     var d = new Date(), z = function (n) { return String(n).padStart(2, "0"); };
     return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate());
@@ -344,18 +340,19 @@
     }
   }
   function newSeed() { state.seed = (Math.floor(Math.random() * 0xffffffff) >>> 0) || 1; }
-
   function clearInputs() {
     if (!window.confirm("本日紹介するお酒・天気・空席などの入力を消去します。店舗プロフィールと投稿者は残ります。よろしいですか？")) return;
     el.rName.value = ""; el.rDesc.value = ""; el.eText.value = "";
     el.gWeather.value = ""; el.gSeason.value = "auto";
     el.hSeat.value = ""; el.hReserve.value = "";
+    el.catSearch.value = ""; el.catResults.style.display = "none";
     saveAll(); newSeed(); generate();
   }
 
   // ---- 配線 ----------------------------------------------------------------
   function onChange(e) {
     if (e.target === el.output) { updateCount(); return; }
+    if (e.target === el.catSearch) return; // 検索欄は専用ハンドラで処理
     if (e.target === el.pStaff) renderStaffChips();
     saveAll(); syncParts(); generate();
   }
@@ -367,17 +364,24 @@
     document.addEventListener("input", onChange);
     document.addEventListener("change", onChange);
 
-    el.toneRow.addEventListener("click", function (e) {
-      var chip = e.target.closest(".chip");
-      if (!chip) return;
-      state.tone = chip.getAttribute("data-tone");
-      applyTone(); saveAll(); generate();
-    });
     el.staffRow.addEventListener("click", function (e) {
       var chip = e.target.closest(".chip");
       if (!chip) return;
       state.staff = chip.getAttribute("data-staff");
       renderStaffChips(); saveAll(); generate();
+    });
+
+    // カタログ検索
+    el.catSearch.addEventListener("focus", function () {
+      loadCatalog(function () { renderCat(el.catSearch.value); });
+    }, { once: true });
+    el.catSearch.addEventListener("input", function () {
+      loadCatalog(function () { renderCat(el.catSearch.value); });
+    });
+    el.catResults.addEventListener("click", function (e) {
+      var item = e.target.closest(".cat-item");
+      if (!item) return;
+      pickCat(parseInt(item.getAttribute("data-i"), 10));
     });
 
     el.btnCopy.addEventListener("click", copyOut);

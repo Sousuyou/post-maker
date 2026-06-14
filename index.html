@@ -79,10 +79,6 @@
             <span>スタッフ名（投稿者。カンマ区切りで複数登録）</span>
             <input type="text" id="p-staff" placeholder="小野寺, 眞家" />
           </label>
-          <label class="field field-wide">
-            <span>定番ハッシュタグ（半角スペース区切り）</span>
-            <input type="text" id="p-tags" placeholder="#BarSoutsu #バー創通 #本日も営業" />
-          </label>
         </div>
         <p class="hint">ここで入れた内容は端末に保存され、次回から自動で使われます。</p>
       </details>
@@ -92,16 +88,6 @@
         <h2 id="staff-label" class="section-label">投稿者（あなた）</h2>
         <p class="hint">今日この投稿をする人を選んでください。文の最初に「〇〇です。」と入ります。名前の追加・変更は店舗プロフィールの「スタッフ名」から。</p>
         <div class="chip-row" id="staff-row" role="radiogroup" aria-label="投稿者"></div>
-      </section>
-
-      <!-- トーン（文章の雰囲気） -->
-      <section class="card" aria-labelledby="tone-label">
-        <h2 id="tone-label" class="section-label">文章の雰囲気</h2>
-        <div class="chip-row" id="tone-row" role="radiogroup" aria-label="文章の雰囲気">
-          <button type="button" class="chip" data-tone="calm" role="radio" aria-checked="false">落ち着いた大人</button>
-          <button type="button" class="chip" data-tone="friendly" role="radio" aria-checked="true">フレンドリー</button>
-          <button type="button" class="chip" data-tone="lively" role="radio" aria-checked="false">にぎやか（絵文字多め）</button>
-        </div>
       </section>
 
       <!-- 投稿に入れる内容 -->
@@ -161,6 +147,12 @@
             <span>本日紹介するお酒</span>
           </label>
           <div class="part-body" id="body-recommend">
+            <label class="field">
+              <span>在庫カタログから選ぶ（名前・カナで検索）</span>
+              <input type="search" id="cat-search" autocomplete="off" placeholder="例）ヘンドリックス、季の美 など…" />
+            </label>
+            <div id="cat-results" class="cat-results" style="display:none"></div>
+            <p class="hint">候補を選ぶと、下の「お酒の名前」と「説明」に自動で入ります（選んだあと自由に手直しできます）。カタログに無いお酒は直接入力してもOKです。</p>
             <div class="inline-grid cols-2">
               <label class="field">
                 <span>種別</span>
@@ -178,7 +170,7 @@
             </div>
             <label class="field">
               <span>説明（味わい・特徴・おすすめの飲み方など）</span>
-              <textarea id="r-desc" rows="3" placeholder="例）薔薇とキュウリを思わせる華やかな香り。トニックで割って、キュウリを添えるのがおすすめです。"></textarea>
+              <textarea id="r-desc" rows="4" placeholder="例）薔薇とキュウリを思わせる華やかな香り。トニックで割って、キュウリを添えるのがおすすめです。"></textarea>
             </label>
           </div>
         </div>
@@ -237,14 +229,6 @@
           <label class="toggle">
             <input type="checkbox" id="t-closing" checked />
             <span>締めの一言（ご来店のお願い）</span>
-          </label>
-        </div>
-
-        <!-- 6. ハッシュタグ -->
-        <div class="part" data-part="tags">
-          <label class="toggle">
-            <input type="checkbox" id="t-tags" checked />
-            <span>ハッシュタグを付ける</span>
           </label>
         </div>
       </section>

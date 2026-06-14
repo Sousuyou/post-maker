@@ -282,6 +282,36 @@ select:focus, textarea:focus, input:focus { outline: 2px solid var(--green); out
 .btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .btn-row button { flex: 1 1 auto; min-width: 130px; }
 
+/* 在庫カタログの検索候補 */
+.cat-results {
+  margin-top: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  background: var(--field);
+}
+.cat-status { padding: 12px; font-size: 0.78rem; color: var(--muted); }
+.cat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: 0;
+  padding: 9px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--field);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.cat-item:last-child { border-bottom: 0; }
+.cat-item:hover { background: var(--green-soft); transform: none; }
+.cat-name { font-size: 0.86rem; font-weight: 700; }
+.cat-sub { font-size: 0.7rem; color: var(--muted); font-weight: 400; }
+
 @media (max-width: 640px) {
   .site-nav { width: calc(100% - 12px); margin: 8px auto 0; }
   .app-shell { width: calc(100% - 12px); margin: 8px auto; padding: 16px; }
