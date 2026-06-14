@@ -2,7 +2,7 @@
 
 毎日のLINE投稿文を、選ぶ・入れるだけで自動で組み立てる入力補助ツールです。
 
-- 公開URL（予定）: https://sousuyou.github.io/line-post-maker/
+- 公開URL（予定）: https://sousuyou.github.io/post-maker/
 - 方式: **入力補助型**（AIサーバ不要・完全無料・オフライン動作）
 - 言い回しは「シード（乱数の種）」で決まり、「言い回しを変える」ボタンで一新されるため、毎日コピペしても文がかぶりません。
 
