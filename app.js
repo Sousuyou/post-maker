@@ -37,7 +37,7 @@
     "p-staff": "小野寺, 眞家",
   };
 
-  var state = { seed: 1, staff: "" };
+  var state = { seed: 1, staff: "", descSource: "manual" };
 
   // ---- 乱数（シード固定）---------------------------------------------------
   function mulberry32(a) {
@@ -170,7 +170,12 @@
     var w = TYPE_WORD[el.rType.value] || "お酒";
     var block = fill(pick(RECO_LEAD), { w: w }) + "\n\n“" + name + "”\n\nです。";
     var desc = el.rDesc.value.trim();
-    if (desc) block += "\n\n" + desc;
+    if (desc) {
+      // カタログから引いた説明は「だ・である調」。本文の敬体と地続きにすると文体差が目立つため、
+      // ラベルで囲って“紹介メモ”として見せ、違和感をやわらげる。手入力の説明はそのまま地続き。
+      if (state.descSource === "catalog") block += "\n\n【このお酒について】\n" + desc;
+      else block += "\n\n" + desc;
+    }
     return block;
   }
   function buildEvent() {
@@ -184,8 +189,8 @@
   function generate() {
     rng = mulberry32(state.seed);
     var blocks = [];
-    if (el.tGreeting.checked) blocks.push(buildSeason());
-    blocks.push(buildOpener());
+    blocks.push(buildOpener());                            // 投稿者＋お礼（常時・先頭）
+    if (el.tGreeting.checked) blocks.push(buildSeason());  // 季節・天気の一言（お礼の後）
     if (el.tHours.checked) blocks.push(buildHours());
     if (el.tRecommend.checked) blocks.push(buildRecommend());
     if (el.tEvent.checked) blocks.push(buildEvent());
@@ -262,6 +267,7 @@
     if (!g) return;
     el.rName.value = g.kana || g.name; // 投稿はカナ表記を優先（無ければ英名）
     el.rDesc.value = g.note;
+    state.descSource = "catalog"; // カタログ由来＝ラベルで囲って見せる
     el.catSearch.value = "";
     el.catResults.style.display = "none";
     el.catResults.innerHTML = "";
@@ -291,7 +297,7 @@
 
   function saveAll() {
     try {
-      var data = { staff: state.staff };
+      var data = { staff: state.staff, descSource: state.descSource };
       SAVE_IDS.forEach(function (id) { data[id] = $(id).value; });
       CHECK_IDS.forEach(function (id) { data[id] = $(id).checked; });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -311,6 +317,7 @@
       if (typeof data[id] === "boolean") $(id).checked = data[id];
     });
     if (data.staff) state.staff = data.staff;
+    if (data.descSource) state.descSource = data.descSource;
     el.gDate.value = todayISO();
     renderStaffChips();
   }
@@ -353,6 +360,7 @@
   function onChange(e) {
     if (e.target === el.output) { updateCount(); return; }
     if (e.target === el.catSearch) return; // 検索欄は専用ハンドラで処理
+    if (e.target === el.rDesc) state.descSource = "manual"; // 手で書き換えたら地続きの敬体扱い
     if (e.target === el.pStaff) renderStaffChips();
     saveAll(); syncParts(); generate();
   }
