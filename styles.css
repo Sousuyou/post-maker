@@ -252,6 +252,7 @@ select:focus, textarea:focus, input:focus { outline: 2px solid var(--green); out
 }
 .part-body { margin: 6px 0 2px 28px; }
 .inline-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 12px; }
+.inline-grid.cols-2 { grid-template-columns: 1fr 1fr; }
 .check-inline {
   display: flex;
   align-items: center;

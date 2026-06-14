@@ -65,7 +65,7 @@
           </label>
           <label class="field">
             <span>営業時間</span>
-            <input type="text" id="p-hours" placeholder="18:00〜翌2:00" />
+            <input type="text" id="p-hours" placeholder="19:00〜翌2:00" />
           </label>
           <label class="field">
             <span>定休日（任意）</span>
@@ -76,12 +76,23 @@
             <input type="text" id="p-tel" placeholder="03-0000-0000" />
           </label>
           <label class="field field-wide">
+            <span>スタッフ名（投稿者。カンマ区切りで複数登録）</span>
+            <input type="text" id="p-staff" placeholder="小野寺, 眞家" />
+          </label>
+          <label class="field field-wide">
             <span>定番ハッシュタグ（半角スペース区切り）</span>
             <input type="text" id="p-tags" placeholder="#BarSoutsu #バー創通 #本日も営業" />
           </label>
         </div>
         <p class="hint">ここで入れた内容は端末に保存され、次回から自動で使われます。</p>
       </details>
+
+      <!-- 投稿者（あなた） -->
+      <section class="card" aria-labelledby="staff-label">
+        <h2 id="staff-label" class="section-label">投稿者（あなた）</h2>
+        <p class="hint">今日この投稿をする人を選んでください。文の最初に「〇〇です。」と入ります。名前の追加・変更は店舗プロフィールの「スタッフ名」から。</p>
+        <div class="chip-row" id="staff-row" role="radiogroup" aria-label="投稿者"></div>
+      </section>
 
       <!-- トーン（文章の雰囲気） -->
       <section class="card" aria-labelledby="tone-label">
@@ -98,11 +109,11 @@
         <h2 id="parts-label" class="section-label">投稿に入れる内容</h2>
         <p class="hint">入れたい項目だけチェック。チェックを外すとその段落は投稿から消えます。</p>
 
-        <!-- 1. 季節・天気・曜日の挨拶 -->
+        <!-- 1. 季節・天気の一言（任意。文頭の「〇〇です。＋お礼」は常に入ります） -->
         <div class="part" data-part="greeting">
           <label class="toggle">
             <input type="checkbox" id="t-greeting" checked />
-            <span>季節・天気・曜日の挨拶</span>
+            <span>季節・天気の一言を添える</span>
           </label>
           <div class="part-body" id="body-greeting">
             <div class="inline-grid">
@@ -143,25 +154,31 @@
           </div>
         </div>
 
-        <!-- 2. おすすめ酒・入荷・限定ボトル -->
+        <!-- 2. 本日紹介するお酒 -->
         <div class="part" data-part="recommend">
           <label class="toggle">
             <input type="checkbox" id="t-recommend" checked />
-            <span>おすすめ酒・入荷・限定ボトル</span>
+            <span>本日紹介するお酒</span>
           </label>
           <div class="part-body" id="body-recommend">
+            <div class="inline-grid cols-2">
+              <label class="field">
+                <span>種別</span>
+                <select id="r-type">
+                  <option value="gin">ジン</option>
+                  <option value="cocktail">カクテル</option>
+                  <option value="bottle">ボトル</option>
+                  <option value="osusume">お酒（おすすめ）</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>お酒の名前</span>
+                <input type="text" id="r-name" placeholder="例）ヘンドリックス" />
+              </label>
+            </div>
             <label class="field">
-              <span>種別</span>
-              <select id="r-type">
-                <option value="osusume">本日のおすすめ</option>
-                <option value="new">新入荷</option>
-                <option value="limited">数量限定</option>
-                <option value="season">季節限定</option>
-              </select>
-            </label>
-            <label class="field">
-              <span>内容（1行に1つ。「名前｜ひとこと」の形でもOK）</span>
-              <textarea id="r-items" rows="3" placeholder="例）&#10;ヘンドリックス｜華やかな薔薇とキュウリの香り&#10;季節のジントニック（白桃）"></textarea>
+              <span>説明（味わい・特徴・おすすめの飲み方など）</span>
+              <textarea id="r-desc" rows="3" placeholder="例）薔薇とキュウリを思わせる華やかな香り。トニックで割って、キュウリを添えるのがおすすめです。"></textarea>
             </label>
           </div>
         </div>

@@ -3,7 +3,7 @@
 //   オフライン時のみキャッシュを使う。画像・CSSは「キャッシュ優先」で高速表示。
 //   → この方式なら、更新しても基本オンラインで即反映される（版数の上げ忘れ事故が起きにくい）。
 //   ※ アプリごとに CACHE 名を変える（例: "myapp-v1"）。ASSETS も実ファイルに合わせる。
-var CACHE = "postmaker-v1";
+var CACHE = "postmaker-v2";
 var ASSETS = [
   "./",
   "./index.html",
