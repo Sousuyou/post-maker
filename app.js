@@ -21,7 +21,7 @@
     pTel: $("p-tel"), pStaff: $("p-staff"),
     gDate: $("g-date"), gWeather: $("g-weather"), gSeason: $("g-season"),
     rType: $("r-type"), rName: $("r-name"), rDesc: $("r-desc"),
-    catSearch: $("cat-search"), catResults: $("cat-results"),
+    catSearch: $("cat-search"), catResults: $("cat-results"), descstyleRow: $("descstyle-row"),
     hSeat: $("h-seat"), hReserve: $("h-reserve"), hShowHours: $("h-showhours"),
     eText: $("e-text"),
     tGreeting: $("t-greeting"), tRecommend: $("t-recommend"), tHours: $("t-hours"),
@@ -37,7 +37,7 @@
     "p-staff": "小野寺, 眞家",
   };
 
-  var state = { seed: 1, staff: "", descSource: "manual" };
+  var state = { seed: 1, staff: "", descSource: "manual", descStyle: "A", catData: null };
 
   // ---- 乱数（シード固定）---------------------------------------------------
   function mulberry32(a) {
@@ -171,9 +171,9 @@
     var block = fill(pick(RECO_LEAD), { w: w }) + "\n\n“" + name + "”\n\nです。";
     var desc = el.rDesc.value.trim();
     if (desc) {
-      // カタログから引いた説明は「だ・である調」。本文の敬体と地続きにすると文体差が目立つため、
-      // ラベルで囲って“紹介メモ”として見せ、違和感をやわらげる。手入力の説明はそのまま地続き。
-      if (state.descSource === "catalog") block += "\n\n【このお酒について】\n" + desc;
+      // B（カタログ解説そのまま）のときだけ「だ・である調」をラベルで囲って“紹介メモ”として見せる。
+      // A（短くまとめる＝敬体）や手入力は、本文と地続きでそのまま入れる。
+      if (state.descSource === "catalog" && state.descStyle === "B") block += "\n\n【このお酒について】\n" + desc;
       else block += "\n\n" + desc;
     }
     return block;
@@ -234,7 +234,7 @@
         catalog = gins.map(function (g) {
           return {
             name: g.name || "", kana: g.kana || "", note: g.note || "",
-            country: g.country || "",
+            country: g.country || "", botanicals: g.botanicals || "", abv: g.abv,
             hay: ((g.name || "") + " " + (g.kana || "") + " " + (g.country || "") + " " + (g.botanicals || "")).toLowerCase(),
           };
         });
@@ -266,13 +266,42 @@
     var g = catShown[i];
     if (!g) return;
     el.rName.value = g.kana || g.name; // 投稿はカナ表記を優先（無ければ英名）
-    el.rDesc.value = g.note;
-    state.descSource = "catalog"; // カタログ由来＝ラベルで囲って見せる
+    state.catData = { name: g.name, kana: g.kana, note: g.note, botanicals: g.botanicals, country: g.country, abv: g.abv };
+    state.descSource = "catalog";
+    applyDescToField(); // 選択中のスタイル(A/B)で説明欄を埋める
     el.catSearch.value = "";
     el.catResults.style.display = "none";
     el.catResults.innerHTML = "";
     if (!el.tRecommend.checked) { el.tRecommend.checked = true; syncParts(); }
     saveAll(); generate();
+  }
+
+  // 説明スタイル A=短い敬体の要約 / B=カタログ解説そのまま
+  function buildShortDesc(c) {
+    var bits = [];
+    var bots = String(c.botanicals || "").split(/[、,]/)
+      .map(function (s) { return s.replace(/（.*?）/g, "").trim(); })
+      .filter(Boolean)
+      .filter(function (b) { return !/ジュニパー|juniper/i.test(b); });
+    if (bots.length) bits.push(bots.slice(0, 3).join("・") + "などのボタニカルが香ります。");
+    if (c.country) bits.push(c.country + "生まれの一本です。");
+    if (c.abv != null && c.abv !== "") {
+      var a = Number(c.abv);
+      if (!isNaN(a)) bits.push("アルコール度数は" + a + "%です。");
+    }
+    return bits.join("");
+  }
+  function applyDescToField() {
+    if (state.descSource !== "catalog" || !state.catData) return;
+    el.rDesc.value = state.descStyle === "A" ? buildShortDesc(state.catData) : (state.catData.note || "");
+  }
+  function applyDescStyle() {
+    if (!el.descstyleRow) return;
+    el.descstyleRow.querySelectorAll(".chip").forEach(function (c) {
+      var on = c.getAttribute("data-ds") === state.descStyle;
+      c.classList.toggle("active", on);
+      c.setAttribute("aria-checked", on ? "true" : "false");
+    });
   }
 
   // ---- 投稿者チップ --------------------------------------------------------
@@ -297,7 +326,7 @@
 
   function saveAll() {
     try {
-      var data = { staff: state.staff, descSource: state.descSource };
+      var data = { staff: state.staff, descSource: state.descSource, descStyle: state.descStyle, catData: state.catData };
       SAVE_IDS.forEach(function (id) { data[id] = $(id).value; });
       CHECK_IDS.forEach(function (id) { data[id] = $(id).checked; });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -318,8 +347,11 @@
     });
     if (data.staff) state.staff = data.staff;
     if (data.descSource) state.descSource = data.descSource;
+    if (data.descStyle) state.descStyle = data.descStyle;
+    if (data.catData) state.catData = data.catData;
     el.gDate.value = todayISO();
     renderStaffChips();
+    applyDescStyle();
   }
   function todayISO() {
     var d = new Date(), z = function (n) { return String(n).padStart(2, "0"); };
@@ -377,6 +409,14 @@
       if (!chip) return;
       state.staff = chip.getAttribute("data-staff");
       renderStaffChips(); saveAll(); generate();
+    });
+    el.descstyleRow.addEventListener("click", function (e) {
+      var chip = e.target.closest(".chip");
+      if (!chip) return;
+      state.descStyle = chip.getAttribute("data-ds");
+      applyDescStyle();
+      applyDescToField(); // カタログ由来の説明を選んだスタイルで入れ直す
+      saveAll(); generate();
     });
 
     // カタログ検索
