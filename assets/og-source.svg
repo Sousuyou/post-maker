@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" width="1200" height="1200">
+  <!-- 1200x1200で描き、qlmanage後に中央630px帯(y=285〜915)を切り出す前提で配置 -->
+  <rect width="1200" height="1200" fill="#15120f"/>
+  <!-- 吹き出し（投稿の象徴）：中央帯の右上に収める -->
+  <g transform="translate(860,330)">
+    <path d="M0 40a40 40 0 0 1 40-40h180a40 40 0 0 1 40 40v110a40 40 0 0 1-40 40h-96l-58 46v-46H40a40 40 0 0 1-40-40z" fill="#fbfaf6"/>
+    <rect x="40" y="48" width="150" height="16" rx="8" fill="#15120f"/>
+    <rect x="40" y="84" width="110" height="16" rx="8" fill="#3f6b54"/>
+    <g fill="none" stroke="#9a7b32" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M150 128h44l-22 25z"/>
+      <path d="M172 153v22"/>
+      <path d="M158 178h28"/>
+    </g>
+  </g>
+  <!-- テキスト：中央帯(285〜915)に収める -->
+  <text x="90" y="380" font-family="system-ui, 'Hiragino Sans', sans-serif" font-size="34" font-weight="700" letter-spacing="6" fill="#d8ad62">BAR SOUTSU</text>
+  <text x="90" y="510" font-family="system-ui, 'Hiragino Sans', sans-serif" font-size="92" font-weight="700" fill="#ece9df">営業投稿メーカー</text>
+  <text x="90" y="590" font-family="system-ui, 'Hiragino Sans', sans-serif" font-size="36" font-weight="500" fill="#a09c8e">LINEの毎日投稿を、選ぶだけで。</text>
+  <text x="90" y="840" font-family="system-ui, 'Hiragino Sans', sans-serif" font-size="26" font-weight="500" fill="#93bf97">入力補助型ジェネレーター ｜ 毎回ちがう言い回し</text>
+</svg>

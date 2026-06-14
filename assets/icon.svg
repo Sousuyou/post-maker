@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Bar Soutsu 営業投稿メーカー">
+  <!-- 背景（角丸の濃色＝ブランド基調） -->
+  <rect width="512" height="512" rx="96" fill="#15120f"/>
+  <!-- 吹き出し（投稿＝メッセージの象徴） -->
+  <path d="M120 128h272a40 40 0 0 1 40 40v152a40 40 0 0 1-40 40H236l-72 60v-60h-44a40 40 0 0 1-40-40V168a40 40 0 0 1 40-40z" fill="#fbfaf6"/>
+  <!-- 本文の行（投稿テキスト） -->
+  <rect x="160" y="184" width="192" height="20" rx="10" fill="#15120f"/>
+  <rect x="160" y="228" width="148" height="20" rx="10" fill="#3f6b54"/>
+  <!-- カクテルグラス（バーの象徴） -->
+  <g fill="none" stroke="#9a7b32" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M300 280h64l-32 36z"/>
+    <path d="M332 316v34"/>
+    <path d="M314 354h36"/>
+  </g>
+</svg>

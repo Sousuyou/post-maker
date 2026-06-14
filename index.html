@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- セキュリティ: 読み込み元を自サイトに限定（CSP）。インライン<script>は使わず app.js / boot.js に置く。 -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'"
+    />
+    <meta name="theme-color" content="#f3f1ec" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#14130f" media="(prefers-color-scheme: dark)" />
+
+    <title>営業投稿メーカー｜Bar Soutsu</title>
+    <meta name="description" content="毎日のLINE投稿文を、選ぶ・入れるだけで自動で組み立てる入力補助ツール。言い回しは毎回ランダムで変わるので、毎日違う投稿になります。" />
+
+    <!-- SNS共有の見栄え（OGP） -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Bar Soutsu" />
+    <meta property="og:title" content="営業投稿メーカー｜Bar Soutsu" />
+    <meta property="og:description" content="毎日のLINE投稿文を、選ぶ・入れるだけで自動で組み立てる入力補助ツールです。" />
+    <meta property="og:url" content="https://sousuyou.github.io/line-post-maker/" />
+    <meta property="og:image" content="https://sousuyou.github.io/line-post-maker/assets/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="営業投稿メーカー｜Bar Soutsu" />
+    <meta name="twitter:description" content="毎日のLINE投稿文を、選ぶ・入れるだけで自動で組み立てる入力補助ツールです。" />
+    <meta name="twitter:image" content="https://sousuyou.github.io/line-post-maker/assets/og-image.png" />
+
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="assets/icon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+    <!-- 共通テーマ（色・ダークモード）を上書き読み込み -->
+    <link rel="stylesheet" href="https://sousuyou.github.io/top/theme.css" />
+  </head>
+  <body class="has-nav">
+    <!-- 共通ナビ：中身は top/nav.js が自動生成（JS無効時はTOPリンクだけ残る） -->
+    <nav class="site-nav" id="site-nav">
+      <a class="site-nav-link" href="https://sousuyou.github.io/top/">TOP</a>
+    </nav>
+    <script src="https://sousuyou.github.io/top/nav.js" defer></script>
+
+    <main class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="brand-mark">Bar Soutsu</p>
+          <p class="eyebrow">Daily Post / LINE</p>
+          <h1 id="page-title">営業投稿メーカー</h1>
+          <p class="lead">
+            おすすめのお酒や空席状況などを選ぶ・入れるだけで、LINEの投稿文を自動で組み立てます。
+            「言い回しを変える」を押すたびに文章が変わるので、毎日コピペしても文がかぶりません。
+          </p>
+        </div>
+      </header>
+
+      <!-- 店舗プロフィール（最初に一度だけ設定。自動保存されます） -->
+      <details class="card profile" id="profile">
+        <summary><span class="section-label">店舗プロフィール（最初に一度だけ設定）</span></summary>
+        <div class="profile-grid">
+          <label class="field">
+            <span>店名</span>
+            <input type="text" id="p-shop" placeholder="Bar Soutsu" />
+          </label>
+          <label class="field">
+            <span>営業時間</span>
+            <input type="text" id="p-hours" placeholder="18:00〜翌2:00" />
+          </label>
+          <label class="field">
+            <span>定休日（任意）</span>
+            <input type="text" id="p-closed" placeholder="日曜" />
+          </label>
+          <label class="field">
+            <span>予約用の電話番号（任意）</span>
+            <input type="text" id="p-tel" placeholder="03-0000-0000" />
+          </label>
+          <label class="field field-wide">
+            <span>定番ハッシュタグ（半角スペース区切り）</span>
+            <input type="text" id="p-tags" placeholder="#BarSoutsu #バー創通 #本日も営業" />
+          </label>
+        </div>
+        <p class="hint">ここで入れた内容は端末に保存され、次回から自動で使われます。</p>
+      </details>
+
+      <!-- トーン（文章の雰囲気） -->
+      <section class="card" aria-labelledby="tone-label">
+        <h2 id="tone-label" class="section-label">文章の雰囲気</h2>
+        <div class="chip-row" id="tone-row" role="radiogroup" aria-label="文章の雰囲気">
+          <button type="button" class="chip" data-tone="calm" role="radio" aria-checked="false">落ち着いた大人</button>
+          <button type="button" class="chip" data-tone="friendly" role="radio" aria-checked="true">フレンドリー</button>
+          <button type="button" class="chip" data-tone="lively" role="radio" aria-checked="false">にぎやか（絵文字多め）</button>
+        </div>
+      </section>
+
+      <!-- 投稿に入れる内容 -->
+      <section class="card" aria-labelledby="parts-label">
+        <h2 id="parts-label" class="section-label">投稿に入れる内容</h2>
+        <p class="hint">入れたい項目だけチェック。チェックを外すとその段落は投稿から消えます。</p>
+
+        <!-- 1. 季節・天気・曜日の挨拶 -->
+        <div class="part" data-part="greeting">
+          <label class="toggle">
+            <input type="checkbox" id="t-greeting" checked />
+            <span>季節・天気・曜日の挨拶</span>
+          </label>
+          <div class="part-body" id="body-greeting">
+            <div class="inline-grid">
+              <label class="field">
+                <span>日付</span>
+                <input type="date" id="g-date" />
+              </label>
+              <label class="field">
+                <span>天気</span>
+                <select id="g-weather">
+                  <option value="">指定なし</option>
+                  <option value="晴れ">晴れ</option>
+                  <option value="くもり">くもり</option>
+                  <option value="雨">雨</option>
+                  <option value="雪">雪</option>
+                  <option value="暑い">暑い日</option>
+                  <option value="蒸し暑い">蒸し暑い</option>
+                  <option value="寒い">寒い日</option>
+                  <option value="肌寒い">肌寒い</option>
+                  <option value="涼しい">涼しい</option>
+                  <option value="風">風が強い</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>季節</span>
+                <select id="g-season">
+                  <option value="auto">日付から自動</option>
+                  <option value="春">春</option>
+                  <option value="初夏">初夏</option>
+                  <option value="梅雨">梅雨</option>
+                  <option value="夏">夏</option>
+                  <option value="秋">秋</option>
+                  <option value="冬">冬</option>
+                  <option value="年末年始">年末年始</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. おすすめ酒・入荷・限定ボトル -->
+        <div class="part" data-part="recommend">
+          <label class="toggle">
+            <input type="checkbox" id="t-recommend" checked />
+            <span>おすすめ酒・入荷・限定ボトル</span>
+          </label>
+          <div class="part-body" id="body-recommend">
+            <label class="field">
+              <span>種別</span>
+              <select id="r-type">
+                <option value="osusume">本日のおすすめ</option>
+                <option value="new">新入荷</option>
+                <option value="limited">数量限定</option>
+                <option value="season">季節限定</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>内容（1行に1つ。「名前｜ひとこと」の形でもOK）</span>
+              <textarea id="r-items" rows="3" placeholder="例）&#10;ヘンドリックス｜華やかな薔薇とキュウリの香り&#10;季節のジントニック（白桃）"></textarea>
+            </label>
+          </div>
+        </div>
+
+        <!-- 3. 営業時間・空席・予約 -->
+        <div class="part" data-part="hours">
+          <label class="toggle">
+            <input type="checkbox" id="t-hours" checked />
+            <span>営業時間・空席・予約</span>
+          </label>
+          <div class="part-body" id="body-hours">
+            <div class="inline-grid">
+              <label class="field">
+                <span>空席状況</span>
+                <select id="h-seat">
+                  <option value="">指定なし</option>
+                  <option value="open">空席あり</option>
+                  <option value="few">残りわずか</option>
+                  <option value="reserve">ご予約がおすすめ</option>
+                  <option value="full">満席に近い</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>予約のご案内</span>
+                <select id="h-reserve">
+                  <option value="">案内しない</option>
+                  <option value="line">LINEで受付</option>
+                  <option value="tel">お電話で受付</option>
+                  <option value="both">LINE・お電話どちらでも</option>
+                </select>
+              </label>
+              <label class="check-inline">
+                <input type="checkbox" id="h-showhours" checked />
+                <span>営業時間を載せる</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. イベント・キャンペーン -->
+        <div class="part" data-part="event">
+          <label class="toggle">
+            <input type="checkbox" id="t-event" />
+            <span>イベント・キャンペーン告知</span>
+          </label>
+          <div class="part-body" id="body-event">
+            <label class="field">
+              <span>内容</span>
+              <textarea id="e-text" rows="2" placeholder="例）今週末はテイスティング会を開催します（要予約）"></textarea>
+            </label>
+          </div>
+        </div>
+
+        <!-- 5. 締めの一言 -->
+        <div class="part" data-part="closing">
+          <label class="toggle">
+            <input type="checkbox" id="t-closing" checked />
+            <span>締めの一言（ご来店のお願い）</span>
+          </label>
+        </div>
+
+        <!-- 6. ハッシュタグ -->
+        <div class="part" data-part="tags">
+          <label class="toggle">
+            <input type="checkbox" id="t-tags" checked />
+            <span>ハッシュタグを付ける</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- 出力 -->
+      <section class="card output-card" aria-labelledby="output-label">
+        <div class="output-head">
+          <h2 id="output-label" class="section-label">できあがった投稿文</h2>
+          <span class="char-count" id="char-count">0 文字</span>
+        </div>
+        <textarea id="output" class="output" rows="12" aria-label="できあがった投稿文" spellcheck="false"></textarea>
+        <p class="hint">そのまま手直しもできます。※「言い回しを変える」を押すと手直しは上書きされます。</p>
+        <div class="btn-row">
+          <button type="button" id="btn-copy">コピーする</button>
+          <button type="button" id="btn-shuffle" class="secondary">言い回しを変える</button>
+          <button type="button" id="btn-clear" class="secondary">入力をクリア</button>
+        </div>
+      </section>
+
+      <footer class="app-footer">
+        <span>Bar Soutsu</span>
+        <span>社内ツール｜営業投稿メーカー</span>
+      </footer>
+    </main>
+
+    <script src="app.js" defer></script>
+    <script src="boot.js" defer></script>
+  </body>
+</html>
